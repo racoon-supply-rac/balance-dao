@@ -10,9 +10,9 @@ The contract does one thing:
 
 If you send 1 $JUNO along with a `swap` message, it will:
 - Burn X% of the $JUNO received
-- Send Y% of the $JUNO received to the development fund
-- Send Z% of the $JUNO received to the vesting fund
-- Send U% of the $JUNO to the developer who made the current contract
+- Send Y% of the $JUNO received to the Balance development fund
+- Send Z% of the $JUNO received to the Juno development fund
+- Send U% of the $JUNO to the developer who created and will maintain the current contract & dApp
 - Send 0.113169 $BALANCE to the sender
 
 The X, Y, Z, U variables are defined when the contract is instantiated.
