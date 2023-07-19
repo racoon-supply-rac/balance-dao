@@ -1,5 +1,5 @@
 use cosmwasm_schema::cw_serde;
-use cosmwasm_std::{ensure, DepsMut, Uint128};
+use cosmwasm_std::{ensure, Coin, DepsMut, Timestamp, Uint128};
 use cw_storage_plus::Item;
 use token_bindings::TokenFactoryQuery;
 
@@ -52,7 +52,10 @@ impl Config {
             .api
             .addr_validate(&init_msg.balance_development_fund_addr)?
             .to_string();
-        init_msg.juno_development_fund_addr = deps.api.addr_validate(&init_msg.juno_development_fund_addr)?.to_string();
+        init_msg.juno_development_fund_addr = deps
+            .api
+            .addr_validate(&init_msg.juno_development_fund_addr)?
+            .to_string();
         init_msg.dev_addr = deps.api.addr_validate(&init_msg.dev_addr)?.to_string();
 
         let config = Config {
@@ -117,3 +120,14 @@ impl Statistics {
 }
 
 pub const STATS: Item<Statistics> = Item::new("stats");
+
+// Only used as a point in time which was using a dead address to burn
+#[cw_serde]
+pub struct BurnedSnapshot {
+    pub denom: String,
+    pub amount: Uint128,
+    pub snapshot_time: Timestamp,
+}
+pub const BURNED_REMINTED_SNAPSHOT: Item<BurnedSnapshot> = Item::new("burned_reminted_snapshot");
+
+pub const TO_BURN: Item<Coin> = Item::new("to_burn");

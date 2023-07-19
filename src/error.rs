@@ -6,6 +6,9 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
+    #[error("NotImplementedYet")]
+    NotImplementedYet {},
+
     #[error("SwapDisabled")]
     SwapDisabled {},
 

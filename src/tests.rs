@@ -1,13 +1,13 @@
 #![cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, Addr, Coin, Decimal, Uint128};
+    use cosmwasm_std::{coin, Addr, Coin, Decimal, StdResult, Uint128};
     use cw_multi_test::{BankSudo, Contract, ContractWrapper, Executor, SudoMsg};
     use token_bindings::{TokenFactoryMsg, TokenFactoryQuery};
     use token_bindings_test::TokenFactoryApp;
 
     use crate::constants::{BALANCE_MAX_SUPPLY, JUNO_MAX_SUPPLY};
     use crate::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-    use crate::state::{Config, Statistics};
+    use crate::state::{BurnedSnapshot, Config, Statistics};
 
     pub const ADMIN: &str = "juno1admin";
     pub const JUNO_DENOM: &str = "ujuno";
@@ -57,7 +57,7 @@ mod tests {
         let contract_id = app.store_code(contract_box_def());
         let contract_addr = app
             .instantiate_contract(
-                contract_id,
+                contract_id.clone(),
                 Addr::unchecked(ADMIN),
                 &InstantiateMsg {
                     accepted_denom: JUNO_DENOM.to_string(),
@@ -71,7 +71,7 @@ mod tests {
                 },
                 &[],
                 "balance_swap",
-                None,
+                Some(ADMIN.to_string()),
             )
             .unwrap();
 
@@ -261,8 +261,8 @@ mod tests {
             .wrap()
             .query_balance(contract_addr.to_string(), JUNO_DENOM.to_string())
             .unwrap();
-        // Should have 0
-        assert_eq!(contract_final.amount, Uint128::zero());
+        // Should have 78_000_000 because it will now be burned later
+        assert_eq!(contract_final.amount, Uint128::new(78_000_000u128));
 
         let final_wallet1_juno: Coin = app
             .wrap()
@@ -364,5 +364,154 @@ mod tests {
             config_query.dev_fees,
             Uint128::new(2_000_000u128) + Uint128::new(1_914_000_000u128)
         );
+
+        // Contract migration
+        // Check if the current state are as expected
+        // Snapshot should be at 0 as no migration happened yet
+        let snapshot_query: StdResult<BurnedSnapshot> = app
+            .wrap()
+            .query_wasm_smart(contract_addr.clone(), &QueryMsg::GetBurnedSnapshot {});
+        // Does not exist
+        assert!(snapshot_query.is_err());
+
+        // The amount to be burned so far should be at 78_000_000 + 74_646_000_000 but it will be 0 after the migration
+        let to_burn_query: Coin = app
+            .wrap()
+            .query_wasm_smart(contract_addr.clone(), &QueryMsg::GetToBurn {})
+            .unwrap();
+        assert_eq!(
+            to_burn_query.amount,
+            Uint128::new(78_000_000u128) + Uint128::new(74_646_000_000u128)
+        );
+        assert_eq!(to_burn_query.denom, JUNO_DENOM);
+
+        // Same Code ID (migration was already there)
+        let migrate_outcome = app.migrate_contract(
+            Addr::unchecked(ADMIN),
+            contract_addr.clone(),
+            &crate::msg::MigrateMsg {},
+            contract_id,
+        );
+        assert!(migrate_outcome.is_ok());
+        let migration_time = app.block_info().time;
+
+        // After the migration
+        let snapshot_query: BurnedSnapshot = app
+            .wrap()
+            .query_wasm_smart(contract_addr.clone(), &QueryMsg::GetBurnedSnapshot {})
+            .unwrap();
+        assert_eq!(snapshot_query.snapshot_time, migration_time);
+        assert_eq!(
+            snapshot_query.amount,
+            Uint128::new(78_000_000u128) + Uint128::new(74_646_000_000u128)
+        );
+        assert_eq!(snapshot_query.denom, JUNO_DENOM);
+
+        // Should now be 0 as this is what will be burned later
+        let to_burn_query: Coin = app
+            .wrap()
+            .query_wasm_smart(contract_addr.clone(), &QueryMsg::GetToBurn {})
+            .unwrap();
+        assert_eq!(to_burn_query.amount, Uint128::zero());
+        assert_eq!(to_burn_query.denom, JUNO_DENOM);
+
+        // We now make a swap and check the states
+        let execute_outcome = app.execute_contract(
+            Addr::unchecked(WALLET1),
+            contract_addr.clone(),
+            &ExecuteMsg::Swap {},
+            &[Coin {
+                denom: JUNO_DENOM.to_string(),
+                amount: Uint128::new(100_000_000u128),
+            }],
+        );
+        app.next_block();
+        assert!(execute_outcome.is_ok());
+
+        // Should be no change
+        let snapshot_query: BurnedSnapshot = app
+            .wrap()
+            .query_wasm_smart(contract_addr.clone(), &QueryMsg::GetBurnedSnapshot {})
+            .unwrap();
+        assert_eq!(snapshot_query.snapshot_time, migration_time);
+        assert_eq!(
+            snapshot_query.amount,
+            Uint128::new(78_000_000u128) + Uint128::new(74_646_000_000u128)
+        );
+        assert_eq!(snapshot_query.denom, JUNO_DENOM);
+
+        // Should now be at 78_000_000 as this is what will be burned later
+        let to_burn_query: Coin = app
+            .wrap()
+            .query_wasm_smart(contract_addr.clone(), &QueryMsg::GetToBurn {})
+            .unwrap();
+        assert_eq!(to_burn_query.amount, Uint128::new(78_000_000u128));
+        assert_eq!(to_burn_query.denom, JUNO_DENOM);
+
+        // But the stats should remain intact
+        let stats_query: Statistics = app
+            .wrap()
+            .query_wasm_smart(contract_addr.clone(), &QueryMsg::GetStats {})
+            .unwrap();
+        // Check bound - rounding
+        assert!(
+            stats_query.distributed
+                <= Uint128::new(11_316_955u128)
+                    + ((total_bought + Uint128::new(100_000_000u128))
+                        * Decimal::from_ratio(BALANCE_MAX_SUPPLY, JUNO_MAX_SUPPLY))
+        );
+        assert!(
+            stats_query.distributed
+                > Uint128::new(11_316_900u128)
+                    + ((total_bought + Uint128::new(100_000_000u128))
+                        * Decimal::from_ratio(BALANCE_MAX_SUPPLY, JUNO_MAX_SUPPLY))
+        );
+        // 33 + ... + 54 = 957
+        assert_eq!(
+            stats_query.received,
+            Uint128::new(100_000_000u128)
+                + Uint128::new(95_700_000_000u128)
+                + Uint128::new(100_000_000u128)
+        );
+        assert_eq!(
+            stats_query.juno_dev_fund,
+            Uint128::new(10_000_000u128)
+                + Uint128::new(9_570_000_000u128)
+                + Uint128::new(10_000_000u128)
+        );
+        assert_eq!(
+            stats_query.burned,
+            Uint128::new(78_000_000u128)
+                + Uint128::new(74_646_000_000u128)
+                + Uint128::new(78_000_000u128)
+        );
+        assert_eq!(
+            stats_query.juno_dev_fund,
+            Uint128::new(10_000_000u128)
+                + Uint128::new(9_570_000_000u128)
+                + Uint128::new(10_000_000u128)
+        );
+        assert_eq!(
+            stats_query.dev_fees,
+            Uint128::new(2_000_000u128)
+                + Uint128::new(1_914_000_000u128)
+                + Uint128::new(2_000_000u128)
+        );
+
+        // Try to burn - should not work
+        let execute_outcome = app.execute_contract(
+            Addr::unchecked(WALLET1),
+            contract_addr.clone(),
+            &ExecuteMsg::Burn {},
+            &[],
+        );
+        assert!(execute_outcome.is_err());
+
+        // Should now have more in the contract
+        let final_contract: Coin = app
+            .wrap()
+            .query_balance(contract_addr, JUNO_DENOM.to_string())
+            .unwrap();
+        assert_eq!(final_contract.amount, Uint128::new(78_000_000u128 + 74_646_000_000u128 + 78_000_000u128));
     }
 }

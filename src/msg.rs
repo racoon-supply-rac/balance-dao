@@ -16,12 +16,15 @@ pub struct InstantiateMsg {
 pub enum ExecuteMsg {
     Swap {},
     EnableDisable {},
+    Burn {},
 }
 
 #[cw_serde]
 pub enum QueryMsg {
     GetConfig {},
     GetStats {},
+    GetBurnedSnapshot {},
+    GetToBurn {},
 }
 
 #[cw_serde]

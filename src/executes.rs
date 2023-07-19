@@ -4,7 +4,7 @@ use token_bindings::{TokenFactoryMsg, TokenFactoryQuery, TokenMsg};
 use crate::constants::{BALANCE_MAX_SUPPLY, JUNO_MAX_SUPPLY};
 use crate::error::ContractError;
 use crate::helpers::{compute_amounts_to_distribute, validate_coin_received};
-use crate::state::{CONFIG, STATS};
+use crate::state::{CONFIG, STATS, TO_BURN};
 
 pub fn swap(
     deps: DepsMut<TokenFactoryQuery>,
@@ -41,13 +41,15 @@ pub fn swap(
     );
     STATS.save(deps.storage, stats)?;
 
-    // Burn
-    response = response.add_message(cosmwasm_std::BankMsg::Burn {
-        amount: vec![Coin {
-            denom: config.accepted_denom.clone(),
-            amount: amounts_to_distribute.burned,
-        }],
-    });
+    // Burn: currently keeps the Juno in the contract which will be burned with `Burn` msg later
+    // TODO: To be changed when the new burn module is live on Juno
+    TO_BURN.update(
+        deps.storage,
+        |mut updated_to_burn| -> Result<_, ContractError> {
+            updated_to_burn.amount += amounts_to_distribute.burned;
+            Ok(updated_to_burn)
+        },
+    )?;
 
     // Dev funds
     response = response.add_message(cosmwasm_std::BankMsg::Send {
