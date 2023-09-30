@@ -225,32 +225,20 @@ dependencies = [
 
 [[package]]
 name = "cw-multi-test"
-version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8e81b4a7821d5eeba0d23f737c16027b39a600742ca8c32eb980895ffd270f4"
+version = "0.16.5"
+source = "git+https://github.com/JakeHartnell/cw-multi-test.git?branch=bank-supply-support#8c618c8dcc014dacf2cc10627805b36bbc0bfc6e"
 dependencies = [
  "anyhow",
  "cosmwasm-std",
- "cosmwasm-storage",
- "cw-storage-plus 0.15.1",
- "cw-utils 0.15.1",
+ "cw-storage-plus 1.1.0",
+ "cw-utils 1.0.1",
  "derivative",
- "itertools",
+ "itertools 0.10.5",
+ "k256",
  "prost",
  "schemars",
  "serde",
  "thiserror",
-]
-
-[[package]]
-name = "cw-storage-plus"
-version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc6cf70ef7686e2da9ad7b067c5942cd3e88dd9453f7af42f54557f8af300fb0"
-dependencies = [
- "cosmwasm-std",
- "schemars",
- "serde",
 ]
 
 [[package]]
@@ -265,18 +253,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw-utils"
-version = "0.15.1"
+name = "cw-storage-plus"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ae0b69fa7679de78825b4edeeec045066aa2b2c4b6e063d80042e565bb4da5c"
+checksum = "3f0e92a069d62067f3472c62e30adedb4cab1754725c0f2a682b3128d2bf3c79"
 dependencies = [
- "cosmwasm-schema",
  "cosmwasm-std",
- "cw2 0.15.1",
  "schemars",
- "semver",
  "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -295,16 +279,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "cw2"
-version = "0.15.1"
+name = "cw-utils"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5abb8ecea72e09afff830252963cb60faf945ce6cef2c20a43814516082653da"
+checksum = "c80e93d1deccb8588db03945016a292c3c631e6325d349ebb35d2db6f4f946f7"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
- "cw-storage-plus 0.15.1",
+ "cw2 1.1.0",
  "schemars",
+ "semver",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -318,6 +304,20 @@ dependencies = [
  "cw-storage-plus 0.16.0",
  "schemars",
  "serde",
+]
+
+[[package]]
+name = "cw2"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29ac2dc7a55ad64173ca1e0a46697c31b7a5c51342f55a1e84a724da4eb99908"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus 1.1.0",
+ "schemars",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -502,6 +502,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -573,7 +582,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
 dependencies = [
  "anyhow",
- "itertools",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
@@ -815,8 +824,8 @@ dependencies = [
 
 [[package]]
 name = "token-bindings"
-version = "0.8.0"
-source = "git+https://github.com/CosmWasm/token-bindings#0a13213ceadb1f83a702c6b5f0a6bf8b884b3ada"
+version = "0.11.0"
+source = "git+https://github.com/CosmosContracts/token-bindings#62069ac61590958cc5ca94f37157b546ca827a37"
 dependencies = [
  "cosmwasm-schema",
  "cosmwasm-std",
@@ -826,14 +835,14 @@ dependencies = [
 
 [[package]]
 name = "token-bindings-test"
-version = "0.8.0"
-source = "git+https://github.com/CosmWasm/token-bindings#0a13213ceadb1f83a702c6b5f0a6bf8b884b3ada"
+version = "0.11.0"
+source = "git+https://github.com/CosmosContracts/token-bindings#62069ac61590958cc5ca94f37157b546ca827a37"
 dependencies = [
  "anyhow",
  "cosmwasm-std",
  "cw-multi-test",
- "cw-storage-plus 0.15.1",
- "itertools",
+ "cw-storage-plus 0.16.0",
+ "itertools 0.11.0",
  "schemars",
  "serde",
  "thiserror",

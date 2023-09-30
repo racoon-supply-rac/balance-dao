@@ -1,5 +1,5 @@
 use cosmwasm_std::{ensure, Coin, Decimal, DepsMut, Env, MessageInfo, Response};
-use token_bindings::{TokenFactoryMsg, TokenFactoryQuery, TokenMsg};
+use token_bindings::{TokenFactoryMsg, TokenFactoryQuery};
 
 use crate::constants::{BALANCE_MAX_SUPPLY, JUNO_MAX_SUPPLY};
 use crate::error::ContractError;
@@ -82,7 +82,7 @@ pub fn swap(
         token_amount_to_send + stats.distributed <= BALANCE_MAX_SUPPLY,
         ContractError::MaxSupplyReached {}
     );
-    let mint_tokens_msg = TokenMsg::mint_contract_tokens(
+    let mint_tokens_msg = TokenFactoryMsg::mint_contract_tokens(
         config.factory_denom,
         token_amount_to_send,
         info.sender.to_string(),

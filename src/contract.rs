@@ -3,7 +3,7 @@ use cosmwasm_std::{
     StdResult, Uint128,
 };
 use cw2::set_contract_version;
-use token_bindings::{TokenFactoryMsg, TokenFactoryQuery, TokenMsg};
+use token_bindings::{TokenFactoryMsg, TokenFactoryQuery};
 
 use crate::error::ContractError;
 use crate::executes::swap;
@@ -43,7 +43,7 @@ pub fn instantiate(
         },
     )?;
 
-    Ok(Response::new().add_message(TokenMsg::CreateDenom {
+    Ok(Response::new().add_message(TokenFactoryMsg::CreateDenom {
         subdenom: "balance".to_string(),
         metadata: None, // exponent 6
     }))
