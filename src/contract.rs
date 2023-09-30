@@ -94,28 +94,5 @@ pub fn migrate(
     env: Env,
     _msg: MigrateMsg,
 ) -> Result<Response<TokenFactoryMsg>, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    let stats = STATS.load(deps.storage)?;
-
-    // Starts from 0 for the new burn module
-    TO_BURN.save(
-        deps.storage,
-        &Coin {
-            denom: config.accepted_denom.clone(),
-            amount: Uint128::zero(),
-        },
-    )?;
-
-    // This was burned but will be reminted - need to check if Juno can burn it when the new module
-    // happens
-    BURNED_REMINTED_SNAPSHOT.save(
-        deps.storage,
-        &BurnedSnapshot {
-            denom: config.accepted_denom,
-            amount: stats.burned,
-            snapshot_time: env.block.time,
-        },
-    )?;
-
     Ok(Response::default())
 }
