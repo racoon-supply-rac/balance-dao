@@ -389,7 +389,7 @@ mod tests {
         let migrate_outcome = app.migrate_contract(
             Addr::unchecked(ADMIN),
             contract_addr.clone(),
-            &crate::msg::MigrateMsg {},
+            &crate::msg::MigrateMsg { states_update: true },
             contract_id,
         );
         assert!(migrate_outcome.is_ok());
